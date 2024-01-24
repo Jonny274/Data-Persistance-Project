@@ -3,16 +3,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
+    public static int BestPoints;
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
-
+    public Text MaxScoreText;
     public Text ScoreText;
     public GameObject GameOverText;
-    
+    public string Name;
+    public string BetterName;
+    public int BetterPoints = 0;
     private bool m_Started = false;
     private int m_Points;
     
@@ -36,6 +40,7 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+        SetMaxPoints(BestPoints);
     }
 
     private void Update()
@@ -61,6 +66,18 @@ public class MainManager : MonoBehaviour
             }
         }
     }
+    public void SetName(){
+        MenuScript pesos = new MenuScript();
+        Name = pesos.getName();
+    }
+    void SetMaxPoints(int Mpoint){
+        SetName();
+        SaveData ejt = new SaveData();
+        ejt.LoadInfo();
+        BetterName = ejt.SaveName;
+        BetterPoints = ejt.SaveScore;
+        MaxScoreText.text = "Best Score Ever: " + ejt.SaveScore +"  Best so far: " + Mpoint;
+    }
 
     void AddPoint(int point)
     {
@@ -70,7 +87,41 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        if(m_Points > BetterPoints){
+            BetterPoints = m_Points;
+            BetterName = Name;
+            BestPoints = m_Points;
+        }else if(BestPoints < m_Points){
+            BestPoints = m_Points;
+            }
+        SaveData jumonji = new SaveData();
+        jumonji.SaveName = BetterName;
+        jumonji.SaveScore = BetterPoints;
+        jumonji.SaveInfo();
         m_GameOver = true;
         GameOverText.SetActive(true);
     }
-}
+    [System.Serializable]
+    class SaveData{
+        public string SaveName;
+        public int SaveScore;
+        public void SaveInfo(){
+            SaveData data = new SaveData();
+            data.SaveName = SaveName;
+            data.SaveScore = SaveScore;
+            string json = JsonUtility.ToJson(data);
+File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+        }
+
+        public void LoadInfo(){
+            string path = Application.persistentDataPath + "/savefile.json";
+    if (File.Exists(path))
+    {
+        string json = File.ReadAllText(path);
+        SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+         SaveName = data.SaveName;
+         SaveScore = data.SaveScore;
+        }
+    }
+}}
